@@ -1,23 +1,47 @@
 package main
 
-import "fmt"
+import (
+	"encoding/csv"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"strconv"
+)
 
 func main() {
 
-	question := []string{"2 + 2", "3 + 3", "4 + 4"}
-	answerArray := []int{4, 6, 8}
 	var answer int
-	var CorrectAnswer int = 0
+	var CorrectAnswer, WrongAnswers int = 0, 0
 
-	for i := 0; i < len(question); i++ {
+	f, err := os.Open("problems.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	r := csv.NewReader(f)
 
-		fmt.Print("\nQuestion ", i, ": ", question[i], " = ")
+	for i := 0; ; i++ {
+
+		questions, err := r.Read()
+
+		if err == io.EOF {
+			fmt.Println("Questions Done :)")
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Print("Question", i, ": ", questions[0], " = ")
 		fmt.Scan(&answer)
 
-		if answer == answerArray[i] {
+		x, err := strconv.Atoi(questions[1])
+		if answer == x {
 			CorrectAnswer++
+		} else {
+			WrongAnswers++
 		}
+
 	}
 
-	fmt.Printf("\nU have done %d/%d \n", CorrectAnswer, len(question))
+	fmt.Printf("\nU have done %d/%d \n", CorrectAnswer, WrongAnswers+CorrectAnswer)
 }
