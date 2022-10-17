@@ -4,47 +4,72 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"strconv"
+	"strings"
+	"time"
 )
 
 func main() {
 	csvFileName := flag.String("csv", "problems.csv", "a csv file in the format of questions,answer")
+	timeLimit := flag.Int("time", 30, "a time limit for the quiz in seconds")
 	flag.Parse()
 
-	var answer int
-	var CorrectAnswer, WrongAnswers int = 0, 0
+	var CorrectAnswer int = 0
 
 	f, err := os.Open(*csvFileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	r := csv.NewReader(f)
+	lines, err := r.ReadAll()
+	problems := parseLines(lines)
 
-	for i := 0; ; i++ {
+	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
 
-		questions, err := r.Read()
+problemloop:
+	for i, p := range problems {
 
-		if err == io.EOF {
-			fmt.Println("Questions Done :)")
-			break
-		} else if err != nil {
-			log.Fatal(err)
+		fmt.Print("Question", i+1, ": ", p.q, " = ")
+		answerCh := make(chan string)
+
+		go func() {
+			var answer string
+			fmt.Scanf("%s\n", &answer)
+			answerCh <- answer
+		}()
+
+		select {
+		case <-timer.C:
+			fmt.Println()
+			break problemloop
+		case answer := <-answerCh:
+			if answer == p.a {
+				CorrectAnswer++
+			}
 		}
-
-		fmt.Print("Question", i, ": ", questions[0], " = ")
-		fmt.Scan(&answer)
-
-		x, err := strconv.Atoi(questions[1])
-		if answer == x {
-			CorrectAnswer++
-		} else {
-			WrongAnswers++
-		}
-
 	}
 
-	fmt.Printf("\nU have done %d/%d \n", CorrectAnswer, WrongAnswers+CorrectAnswer)
+	fmt.Printf("\nU have done %d/%d \n", CorrectAnswer, len(problems))
+}
+
+func parseLines(lines [][]string) []problem {
+	ret := make([]problem, len(lines))
+	for i, line := range lines {
+		ret[i] = problem{
+			q: line[0],
+			a: strings.TrimSpace(line[1]),
+		}
+	}
+	return ret
+}
+
+type problem struct {
+	q string
+	a string
+}
+
+func exit(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
 }
