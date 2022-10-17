@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -10,11 +11,13 @@ import (
 )
 
 func main() {
+	csvFileName := flag.String("csv", "problems.csv", "a csv file in the format of questions,answer")
+	flag.Parse()
 
 	var answer int
 	var CorrectAnswer, WrongAnswers int = 0, 0
 
-	f, err := os.Open("problems.csv")
+	f, err := os.Open(*csvFileName)
 	if err != nil {
 		log.Fatal(err)
 	}
